@@ -577,10 +577,10 @@ public class Main : BasePlugin
         MainClass.acquirerDict["getmapdata"] = new MTCustomScripts.Acquirers.AcquirerGetMapData();
         MainClass.acquirerDict["getfinal"] = new MTCustomScripts.Acquirers.AcquirerGetFinalPower();
         MainClass.acquirerDict["getpaniclevel"] = new MTCustomScripts.Acquirers.AcquirerGetPanicLevel();
-        MainClass.acquirerDict["didusedskillprevturn"] = new AcquirerUsedSkillPrevTurn();
+        MainClass.acquirerDict["didusedskillprevturn"] = new AcquirerUsedSkillPrevTurn(); //new
         MainClass.acquirerDict["getbuffstackgainedthisturn"] = new AcquirerGetBuffStackGainedThisTurn(); //new
-        MainClass.acquirerDict["getbreaklevel"] = new AcquirerGetCurrentBrokenLevel();
-        MainClass.acquirerDict["isactionable"] = new AcquirerIsActionable(); //end
+        MainClass.acquirerDict["getbreaklevel"] = new AcquirerGetCurrentBrokenLevel(); //new
+        MainClass.acquirerDict["isactionable"] = new AcquirerIsActionable(); //new
 
         MainClass.consequenceDict["ovwatkres"] = new MTCustomScripts.Consequences.ConsequenceOverwriteAtkResist();
         MainClass.consequenceDict["ovwsinres"] = new MTCustomScripts.Consequences.ConsequenceOverwriteSinResist();

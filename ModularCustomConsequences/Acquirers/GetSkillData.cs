@@ -37,7 +37,7 @@ namespace MTCustomScripts.Acquirers
                     result = skill.GetCoinScale();
                     break;
                 case "CoinScaleAdder":
-                    result = skill.GetCoinScaleAdder(oppoAction, selectedCoins[0]);
+                    result = skill.GetCoinScaleAdder(oppoAction, selectedCoins[0], null);
                     break;
                 case "Final":
                     result = skill.GetSkillPowerAdder(oppoAction, rollType, selectedCoins);

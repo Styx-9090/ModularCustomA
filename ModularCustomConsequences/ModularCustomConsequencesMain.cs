@@ -42,7 +42,7 @@ public class Main : BasePlugin
 {
     // Edit the below to your own plugin name, version, etc.
     public const string NAME = "MTCustomScripts";
-    public const string VERSION = "6.49.16";
+    public const string VERSION = "8.53.16";
     public const string AUTHOR = "MT";
     public const string GUID = $"{AUTHOR}.{NAME}";
 
@@ -169,7 +169,6 @@ public class Main : BasePlugin
 
         public static System.Collections.Generic.Dictionary<BuffModel, PANIC_TYPE> overrideBuffPanicDict = new System.Collections.Generic.Dictionary<BuffModel, PANIC_TYPE>();
     }
-}
 
     public class ConsequenceTest : IModularConsequence
     {

@@ -164,14 +164,35 @@ public class Main : BasePlugin
 
         public static string[] StringArrayGenerator(string circle) { return circle.Split('|'); }
 
-
         public class CustomSystemAbility : BattleSystemAbility
         {
             public virtual int getCustomIdentifier()
             {
                 return 5000;
             }
+
+            public virtual string getCustomNameId()
+            {
+                return "CustomAbilityTemplate";
+            }
         }
+
+        public class ModularSystemAbility : CustomSystemAbility
+        {
+            public override int getCustomIdentifier()
+            {
+                return 5001;
+            }
+
+            public override string getCustomNameId()
+            {
+                return "ModularAbility";
+            }
+
+            public System.Collections.Generic.Dictionary<string, ModularSA> modularDict = new System.Collections.Generic.Dictionary<string, ModularSA>(System.StringComparer.OrdinalIgnoreCase);
+        }
+
+
 
 
         public static bool tryAddCustomSystemAbility(CustomSystemAbility newSystemAbility, out string logging)

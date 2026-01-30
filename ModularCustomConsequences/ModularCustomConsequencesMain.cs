@@ -16,7 +16,6 @@ using Lethe.Patches;
 using System.Collections.Generic;
 using Il2CppSystem.Collections.Generic;
 using HarmonyLib;
-using Unity.Mathematics;
 using View;
 using UnityEngine;
 using System.Linq;
@@ -165,6 +164,59 @@ public class Main : BasePlugin
 
         public static string[] StringArrayGenerator(string circle) { return circle.Split('|'); }
 
+        public class CustomSystemAbility : BattleSystemAbility
+        {
+            public virtual int getCustomIdentifier()
+            {
+                return 5000;
+            }
+
+            public virtual string getCustomNameId()
+            {
+                return "CustomAbilityTemplate";
+            }
+        }
+
+        public class ModularSystemAbility : CustomSystemAbility
+        {
+            public override int getCustomIdentifier()
+            {
+                return 5001;
+            }
+
+            public override string getCustomNameId()
+            {
+                return "ModularAbility";
+            }
+
+            public System.Collections.Generic.Dictionary<string, ModularSA> modularDict = new System.Collections.Generic.Dictionary<string, ModularSA>(System.StringComparer.OrdinalIgnoreCase);
+        }
+
+
+
+
+        public static bool tryAddCustomSystemAbility(CustomSystemAbility newSystemAbility, out string logging)
+        {
+            int newId = newSystemAbility.getCustomIdentifier();
+            if (newId == 5000 || Il2CppSystem.Enum.IsDefined(Il2CppSystem.Type.GetType(nameof(SYSTEM_ABILITY_KEYWORD), true), newId))
+            {
+                logging = $"System Ability with ID {newId} is template or already taken in Vanilla";
+                return false;
+            }
+
+            if (customSystemAbilityDict.ContainsValue(newSystemAbility))
+            {
+                logging = $"System Ability with ID {newId} is already in the dictionnary";
+                return false;
+            }
+
+            customSystemAbilityDict[newId] = newSystemAbility;
+            logging = $"Successfull addition of System Ability with ID {newId}";
+            return true;
+        }
+
+        public static System.Collections.Generic.Dictionary<int, SystemAbility> customSystemAbilityDict = new System.Collections.Generic.Dictionary<int, SystemAbility>();
+
         public static System.Collections.Generic.Dictionary<string, string> stringDict = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         public static System.Collections.Generic.Dictionary<BuffModel, PANIC_TYPE> overrideBuffPanicDict = new System.Collections.Generic.Dictionary<BuffModel, PANIC_TYPE>();
@@ -287,31 +339,8 @@ public class Main : BasePlugin
             return ValueTask.FromResult(1);
         }
     }
-    public class ConsequenceChangeTakeBuffDamage : IModularConsequence
-    {
-        public void ExecuteConsequence(ModularSA modular, string section, string circledSection, string[] circles)
-        {
-            Il2CppSystem.Collections.Generic.List<BattleUnitModel> targetList = modular.GetTargetModelList(circles[0]);
-            if (targetList.Count < 1) return;
-            BUFF_UNIQUE_KEYWORD keyword = CustomBuffs.ParseBuffUniqueKeyword(circles[1]);
-            if (keyword.ToString() != circles[1]) keyword = BUFF_UNIQUE_KEYWORD.None;
-            int resultDmg = modular.GetNumFromParamString(circles[2]);
-            DAMAGE_SOURCE_TYPE source = DAMAGE_SOURCE_TYPE.NONE;
-            if (circles[3] != "All") Enum.TryParse<DAMAGE_SOURCE_TYPE>(circles[3], true, out source);
-            foreach(BattleUnitModel target in targetList)
-            {
-                if (circles[3] == "All")
-                {
-                    foreach (DAMAGE_SOURCE_TYPE srcType in Enum.GetValues<DAMAGE_SOURCE_TYPE>())
-                    {
-                        if (srcType != DAMAGE_SOURCE_TYPE.NONE) target.ChangeTakeDamage(null, null, resultDmg, srcType, keyword, modular.battleTiming);
-                    }
-                    continue;
-                }
-                target.ChangeTakeDamage(null, null, resultDmg, source, keyword, modular.battleTiming);
-            }
-        }
-    }
+    
+    
 
     public static Main Instance;
 
@@ -330,6 +359,7 @@ public class Main : BasePlugin
         harmony.PatchAll(typeof(Modular_Consequence));
         harmony.PatchAll(typeof(BuffModel_OverwritePanic));
         harmony.PatchAll(typeof(PanicOrLowMorale));
+        harmony.PatchAll(typeof(LoseAnyBuff));
         harmony.PatchAll(typeof(EquipDefenseOperation));
         harmony.PatchAll(typeof(BuffModelPatch));
 
@@ -404,12 +434,12 @@ public class Main : BasePlugin
         MainClass.consequenceDict["instantdeath"] = new MTCustomScripts.Consequences.ConsequenceInstantDeath();
         // MainClass.consequenceDict["changetakebuffdmg"] = new MTCustomScripts.Consequences.ConsequenceChangeTakeBuffDamage(); //doesnt work
         MainClass.consequenceDict["lbreak"] = new MTCustomScripts.Consequences.ConsequenceLBreak();
+        MainClass.consequenceDict["addcoin"] = new MTCustomScripts.Consequences.ConsequenceAddCoin();
         MainClass.consequenceDict["removecoin"] = new MTCustomScripts.Consequences.ConsequenceCoinCancel();
 
         MainClass.consequenceDict["test"] = new ConsequenceTest();
         MainClass.consequenceDict["test1"] = new ConsequenceTest1();
         MainClass.acquirerDict["test2"] = new AcquirerTest();
-        //MainClass.consequenceDict["addcoin"] = new MTCustomScripts.Consequences.ConsequenceAddCoin();
         // MainClass.consequenceDict["test"] = new ConsequenceTest();
         // MainClass.consequenceDict["testthree"] = new ConsequenceTest3();
         // MainClass.consequenceDict["reload"] = new ConsequenceReload();

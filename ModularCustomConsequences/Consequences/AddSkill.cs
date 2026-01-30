@@ -23,15 +23,15 @@ namespace MTCustomScripts.Consequences
 
             foreach (BattleUnitModel unit in unitList)
             {
-                if (unit.UnitDataModel.SkillList.ToSystem().Find(x => x.GetID() == skillId) != null) return;
+                if (unit.UnitDataModel.SkillList.ToSystem().Find(x => x.GetID() == skillId) != null) continue;
 
                 SkillStaticDataList skillList = Singleton<StaticDataManager>.Instance._skillList;
                 SkillStaticData data = skillList.GetData(skillId);
                 UnitAttribute skillAttribute = new UnitAttribute();
-                skillAttribute.number = (circles[4] != null) ? modular.GetNumFromParamString(circles[4]) : 0;
+                skillAttribute.number = (circles.Length >= 5 && circles[4] != null) ? modular.GetNumFromParamString(circles[4]) : 0;
                 skillAttribute.skillId = skillId;
-                int level = (circles[2] != null) ? modular.GetNumFromParamString(circles[2]) : unit.UnitDataModel.Level;
-                int sync = (circles[3] != null) ? modular.GetNumFromParamString(circles[3]) : unit.UnitDataModel.SyncLevel;
+                int level = (circles.Length >= 3 && circles[2] != null && circles[2] != "0") ? modular.GetNumFromParamString(circles[2]) : unit.UnitDataModel.Level;
+                int sync = (circles.Length >= 4 && circles[3] != null && circles[3] != "0") ? modular.GetNumFromParamString(circles[3]) : unit.UnitDataModel.SyncLevel;
                 SkillModel skillModel = new SkillModel(data, level, sync);
 
 

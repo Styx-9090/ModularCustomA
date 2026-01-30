@@ -169,6 +169,7 @@ namespace MTCustomScripts
         {
             Il2CppSystem.Collections.Generic.List<CoinModel> selectedCoinsList = new Il2CppSystem.Collections.Generic.List<CoinModel>();
             System.Collections.Generic.List<CoinModel> temporarysCoinsList = new System.Collections.Generic.List<CoinModel>();
+            if (selectedSkillCoin == null) selectedSkillCoin = selectedSkill.GetCoinByIndex(0);
 
             string[] splitCoinTarget = (coinTarget.Contains('|')) ? coinTarget.Split('|', System.StringSplitOptions.RemoveEmptyEntries) : new string[] { coinTarget };
 
@@ -179,8 +180,8 @@ namespace MTCustomScripts
 
                 try
                 {
-                    if (splitCoinTarget[i].StartsWith("SELF", System.StringComparison.OrdinalIgnoreCase) && selectedSkillCoin != null) selectedCoinsList.Add(selectedSkillCoin);
-                    if (splitCoinTarget[i].StartsWith("OTHERS", System.StringComparison.OrdinalIgnoreCase) && selectedSkillCoin != null) foreach (CoinModel modularCoin in selectedSkill.CoinList) if (modularCoin != selectedSkillCoin) selectedCoinsList.Add(modularCoin);
+                    if (splitCoinTarget[i].StartsWith("SELF", System.StringComparison.OrdinalIgnoreCase)) selectedCoinsList.Add(selectedSkillCoin);
+                    if (splitCoinTarget[i].StartsWith("OTHERS", System.StringComparison.OrdinalIgnoreCase)) foreach (CoinModel modularCoin in selectedSkill.CoinList) if (modularCoin != selectedSkillCoin) selectedCoinsList.Add(modularCoin);
                     if (splitCoinTarget[i].StartsWith("ALL", System.StringComparison.OrdinalIgnoreCase)) foreach (CoinModel modularCoin in selectedSkill.CoinList) selectedCoinsList.Add(modularCoin);
                 }
                 catch (System.Exception ex)

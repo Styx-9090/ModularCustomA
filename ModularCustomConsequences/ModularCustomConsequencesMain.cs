@@ -30,6 +30,7 @@ using System.ComponentModel;
 using System.Text.RegularExpressions;
 using BepInEx.Logging;
 using DiscordRPC;
+using MTCustomScripts.Patches;
 
 namespace MTCustomScripts;
 
@@ -164,59 +165,6 @@ public class Main : BasePlugin
 
         public static string[] StringArrayGenerator(string circle) { return circle.Split('|'); }
 
-        public class CustomSystemAbility : BattleSystemAbility
-        {
-            public virtual int getCustomIdentifier()
-            {
-                return 5000;
-            }
-
-            public virtual string getCustomNameId()
-            {
-                return "CustomAbilityTemplate";
-            }
-        }
-
-        public class ModularSystemAbility : CustomSystemAbility
-        {
-            public override int getCustomIdentifier()
-            {
-                return 5001;
-            }
-
-            public override string getCustomNameId()
-            {
-                return "ModularAbility";
-            }
-
-            public System.Collections.Generic.Dictionary<string, ModularSA> modularDict = new System.Collections.Generic.Dictionary<string, ModularSA>(System.StringComparer.OrdinalIgnoreCase);
-        }
-
-
-
-
-        public static bool tryAddCustomSystemAbility(CustomSystemAbility newSystemAbility, out string logging)
-        {
-            int newId = newSystemAbility.getCustomIdentifier();
-            if (newId == 5000 || Il2CppSystem.Enum.IsDefined(Il2CppSystem.Type.GetType(nameof(SYSTEM_ABILITY_KEYWORD), true), newId))
-            {
-                logging = $"System Ability with ID {newId} is template or already taken in Vanilla";
-                return false;
-            }
-
-            if (customSystemAbilityDict.ContainsValue(newSystemAbility))
-            {
-                logging = $"System Ability with ID {newId} is already in the dictionnary";
-                return false;
-            }
-
-            customSystemAbilityDict[newId] = newSystemAbility;
-            logging = $"Successfull addition of System Ability with ID {newId}";
-            return true;
-        }
-
-        public static System.Collections.Generic.Dictionary<int, SystemAbility> customSystemAbilityDict = new System.Collections.Generic.Dictionary<int, SystemAbility>();
-
         public static System.Collections.Generic.Dictionary<string, string> stringDict = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         public static System.Collections.Generic.Dictionary<BuffModel, PANIC_TYPE> overrideBuffPanicDict = new System.Collections.Generic.Dictionary<BuffModel, PANIC_TYPE>();
@@ -339,6 +287,19 @@ public class Main : BasePlugin
             return ValueTask.FromResult(1);
         }
     }
+
+    public void AddTiming(Harmony harmony, Type patch, string[] timingList, int[] actEvents)
+    {
+        try
+        {
+            harmony.PatchAll(patch);
+            if (timingList != null && actEvents != null)
+            {
+                for (int i = 0; i < timingList.Length; i++) MainClass.timingDict.Add(timingList[i], actEvents[i]);
+            }
+        }
+        catch (System.Exception ex) { Main.Logger.LogError($"Error on timing with names = {string.Join('/', timingList)}\n{ex}"); }
+    }
     
     
 
@@ -352,27 +313,26 @@ public class Main : BasePlugin
         Logger = Log;
 
         Harmony harmony = new Harmony(NAME);
-        harmony.PatchAll(typeof(Patch_DefenseChange));
-        harmony.PatchAll(typeof(RightAfterGetAnyBuff));
-        harmony.PatchAll(typeof(Modular_SetupModular));
-        // harmony.PatchAll(typeof(RightAfterGiveBuffBySkill));
-        harmony.PatchAll(typeof(Modular_Consequence));
-        harmony.PatchAll(typeof(BuffModel_OverwritePanic));
-        harmony.PatchAll(typeof(PanicOrLowMorale));
-        harmony.PatchAll(typeof(LoseAnyBuff));
-        harmony.PatchAll(typeof(EquipDefenseOperation));
-        harmony.PatchAll(typeof(BuffModelPatch));
+            AddTiming(harmony, typeof(RightAfterGetAnyBuff), null, null);
+            AddTiming(harmony, typeof(PanicOrLowMorale), new string[] { "OnPanic", "OnotherPanic", "OnLowMorale", "OnOtherLowMorale" }, new int[] { 90901, 90902, 90903, 90904 });
+            AddTiming(harmony, typeof(RecoverBreak), new string[] { "OnRecoverBreak", "OnOtherRecoverBreak" }, new int[] { 90905, 90906 });
+            AddTiming(harmony, typeof(LoseAnyBuff), new string[] { "OnLoseBuff", "OnBeforeLoseBuff" }, new int[] { 90907, 90908 });
 
-        // MainClass.timingDict.Add("OnGainBuff", 1337);
-        // MainClass.timingDict.Add("OnInflictBuff", 1733);
-        MainClass.timingDict.Add("OnPanic", 90901);
-        MainClass.timingDict.Add("OnOtherPanic", 909012);
-        MainClass.timingDict.Add("OnLowMorale", 90903);
-        MainClass.timingDict.Add("OnOtherLowMorale", 90904);
-        MainClass.timingDict.Add("OnRecoverBreak", 90905);
-        MainClass.timingDict.Add("OnOtherRecoverBreak", 90906);
-        MainClass.timingDict.Add("OnLoseBuff", 90907);
-        MainClass.timingDict.Add("OnBeforeLoseBuff", 90908);
+        try
+        {
+            harmony.PatchAll(typeof(Patch_DefenseChange));
+            harmony.PatchAll(typeof(Modular_SetupModular));
+            harmony.PatchAll(typeof(Modular_Consequence));
+            harmony.PatchAll(typeof(BuffModel_OverwritePanic));
+            harmony.PatchAll(typeof(EquipDefenseOperation));
+            harmony.PatchAll(typeof(BuffModelPatch));
+            harmony.PatchAll(typeof(SystemAbilityDetail_Patch));
+            // harmony.PatchAll(typeof(RightAfterGiveBuffBySkill));
+
+            // MainClass.timingDict.Add("OnGainBuff", 1337);
+            // MainClass.timingDict.Add("OnInflictBuff", 1733);
+        }
+        catch (System.Exception ex) { Main.Logger.LogError("Error when loading patches: " + ex); }
 
 
         MainClass.luaFunctionDict["jsontolua"] = new MTCustomScripts.LuaFunctions.LuaFunctionJsonDecoder();
@@ -436,6 +396,7 @@ public class Main : BasePlugin
         MainClass.consequenceDict["lbreak"] = new MTCustomScripts.Consequences.ConsequenceLBreak();
         MainClass.consequenceDict["addcoin"] = new MTCustomScripts.Consequences.ConsequenceAddCoin();
         MainClass.consequenceDict["removecoin"] = new MTCustomScripts.Consequences.ConsequenceCoinCancel();
+        MainClass.consequenceDict["changecolor"] = new MTCustomScripts.Consequences.ConsequenceChangeCoinType();
 
         MainClass.consequenceDict["test"] = new ConsequenceTest();
         MainClass.consequenceDict["test1"] = new ConsequenceTest1();

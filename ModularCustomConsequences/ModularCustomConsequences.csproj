@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>Library</OutputType>
 		<PlatformTarget>x64</PlatformTarget>
@@ -48,26 +48,11 @@
 		<Reference Include="$(LimbusCompanyFolder)\BepInEx\plugins\Lethe.dll">
 			<HintPath>%(Identity)</HintPath>
 			<Private>false</Private>
-	  </Reference>
+		</Reference>
 		<Reference Include="$(LimbusCompanyFolder)\BepInEx\plugins\ModularSkillScripts.dll">
 			<HintPath>%(Identity)</HintPath>
 			<Private>false</Private>
-	  </Reference>
-	  <Reference Include="InterfacesLibraryAssembly">
-	    <HintPath>D:\Lethe\BepInEx\interop\InterfacesLibraryAssembly.dll</HintPath>
-	  </Reference>
-	  <Reference Include="JsonExtensions">
-	    <HintPath>D:\Lethe\BepInEx\interop\JsonExtensions.dll</HintPath>
-	  </Reference>
-	  <Reference Include="Merged">
-	    <HintPath>D:\Lethe\BepInEx\plugins\Lethe.dll</HintPath>
-	  </Reference>
-	  <Reference Include="ModularSkillScripts">
-	    <HintPath>D:\Lethe\BepInEx\plugins\ModularSkillScripts.dll</HintPath>
-	  </Reference>
-	  <Reference Include="UnityEngine">
-	    <HintPath>D:\Lethe\BepInEx\interop\UnityEngine.dll</HintPath>
-	  </Reference>
+		</Reference>
 	</ItemGroup>
 
 	<!-- ~~~~~ Copy to game folder on build ~~~~~ -->

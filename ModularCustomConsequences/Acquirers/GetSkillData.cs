@@ -38,10 +38,10 @@ namespace MTCustomScripts.Acquirers
                     result = (selfAction != null && oppoAction != null) ? skill.GetCoinScaleAdder(selfAction, selectedCoins[0], oppoAction) : -1;
                     break;
                 case "Final":
-                    result = (selfAction != null) ? skill.GetSkillPowerAdder(selfAction, rollType, selectedCoins) : -1;
+                    result = (selfAction != null) ? skill.GetSkillPowerResultAdder(selfAction, modular.battleTiming, selectedCoins[0]) : -1;
                     break;
                 case "Clash":
-                    result = (selfAction != null) ? skill.GetSkillPowerResultAdder(selfAction, modular.battleTiming, selectedCoins[0]) : -1;
+                    result = (selfAction != null) ? skill.GetParryingResultAdder(selfAction, selfAction.skillPowerResultValue, oppoAction, oppoAction.skillPowerResultValue) : -1;
                     break;
                 case "Weight":
                     result = (selfAction != null) ? skill.GetAttackWeight(selfAction) : -1;
@@ -54,6 +54,9 @@ namespace MTCustomScripts.Acquirers
                     break;
                 case "Default":
                     result = skill.GetSkillDefaultPower();
+                    break;
+                case "DefaultAdder":
+                    result = skill.GetSkillPowerAdder(selfAction, rollType, skill.CoinList);
                     break;
                 case "Motion":
                     result = (int)skill.GetSkillMotion();

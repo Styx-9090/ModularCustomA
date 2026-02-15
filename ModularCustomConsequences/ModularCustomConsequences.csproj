@@ -1,4 +1,4 @@
-﻿﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>Library</OutputType>
 		<PlatformTarget>x64</PlatformTarget>
@@ -57,7 +57,7 @@
 
 	<!-- ~~~~~ Copy to game folder on build ~~~~~ -->
 	<Target Name="CopyToGame" AfterTargets="build">
-		<Message Text="Copying ModularSkillScripts.dll to game..." Importance="high"/>
-		<Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFiles="$(LimbusCompanyFolder)\BepInEx\plugins\$(AssemblyName).dll"/>
+		<Message Text="Copying ModularSkillScripts.dll to game..." Importance="high" />
+		<Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFiles="$(LimbusCompanyFolder)\BepInEx\plugins\$(AssemblyName).dll" />
 	</Target>
 </Project>

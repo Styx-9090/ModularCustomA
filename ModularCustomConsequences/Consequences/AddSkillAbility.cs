@@ -10,7 +10,7 @@ public class ConsequenceAddSkillAbility : IModularConsequence
         SkillModel skill = modular.modsa_skillModel;
         if (circles[0] != "Self") skill = modular.modsa_oppoAction.Skill;
         if (skill == null) return;
-        string skillScriptName = circles[0];
+        string skillScriptName = circles[1];
         skillScriptName = $"SkillAbility_{skillScriptName}";
         try
         {

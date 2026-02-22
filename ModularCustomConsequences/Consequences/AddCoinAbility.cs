@@ -8,14 +8,16 @@ public class ConsequenceAddCoinAbility : IModularConsequence
 {
     public void ExecuteConsequence(ModularSA modular, string section, string circledSection, string[] circles)
     {
-        if (modular.modsa_skillModel == null) return;
-        string coinScriptName = circles[0];
+        SkillModel skill = modular.modsa_skillModel;
+        if (circles[0] != "Self") skill = modular.modsa_oppoAction.Skill;
+        if (skill == null) return;
+        string coinScriptName = circles[1];
         coinScriptName = $"CoinAbility_{coinScriptName}";
         try
         {
-            if (circles.Length > 1)
+            if (circles.Length > 2)
             {
-                foreach (string circle in circles.Skip(1))
+                foreach (string circle in circles.Skip(2))
                 {
                     CoinAbility newCoinAbility = (CoinAbility)Activator.CreateInstance(typeof(CoinAbility).Assembly.GetType(coinScriptName));
                     int idx = modular.GetNumFromParamString(circle);

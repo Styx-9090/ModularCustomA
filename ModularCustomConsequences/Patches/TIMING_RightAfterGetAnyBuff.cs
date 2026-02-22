@@ -36,7 +36,7 @@ internal class RightAfterGetAnyBuff
                 BUFF_UNIQUE_KEYWORD trigger = MTCustomScripts.Main.Instance.keywordTriggerDict[modpa.Pointer.ToInt64()];
                 if ((trigger != BUFF_UNIQUE_KEYWORD.None) && (trigger != keyword)) continue;
 
-                MainClass.Logg.LogInfo("Founds modpassive - GainBuff timing: " + modpa.passiveID);
+                // MainClass.Logg.LogInfo("Founds modpassive - GainBuff timing: " + modpa.passiveID);
 
                 modpa.modsa_passiveModel = passiveModel;
                 // modpa.Enact(__instance, null, null, actionOrNull, actevent, timing);
@@ -61,7 +61,7 @@ internal class RightAfterGetAnyBuff
                 BUFF_UNIQUE_KEYWORD trigger = MTCustomScripts.Main.Instance.keywordTriggerDict[modpa.Pointer.ToInt64()];
                 if ((trigger != BUFF_UNIQUE_KEYWORD.None) && (trigger != keyword)) continue;
 
-                MainClass.Logg.LogInfo("Founds modpassive - GainBuff timing: " + modpa.passiveID);
+                // MainClass.Logg.LogInfo("Founds modpassive - GainBuff timing: " + modpa.passiveID);
                 
                 modpa.modsa_passiveModel = passiveModel;
                 // modpa.Enact(__instance, null, null, actionOrNull, actevent, timing);

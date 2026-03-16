@@ -33,7 +33,8 @@ namespace MTCustomScripts.Consequences
                 int level = (circles.Length >= 3 && circles[2] != null && circles[2] != "0") ? modular.GetNumFromParamString(circles[2]) : unit.UnitDataModel.Level;
                 int sync = (circles.Length >= 4 && circles[3] != null && circles[3] != "0") ? modular.GetNumFromParamString(circles[3]) : unit.UnitDataModel.SyncLevel;
                 SkillModel skillModel = new SkillModel(data, level, sync);
-
+                skillModel._skillData._skillEgoType = 0;
+                // if (circles.Length > 5) skillModel.skillData.canDuel = false;
 
                 unit.UnitDataModel._unitAttributeList.Add(skillAttribute);
                 unit.UnitDataModel._skillList.Add(skillModel);

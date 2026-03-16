@@ -1,14 +1,11 @@
-﻿using Cpp2IL.Core.Attributes;
-using Il2CppInterop.Runtime.Attributes;
-using Il2CppInterop.Runtime.Injection;
+﻿using Dungeon.Railway;
 using Il2CppSystem;
 using ModularSkillScripts;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
-using UnityEngine;
+using static MirrorDungeonSelectThemeUIPanel.UIResources;
 
 namespace MTCustomScripts
 {
@@ -53,23 +50,14 @@ namespace MTCustomScripts
             if (!Il2CppSystem.Enum.IsDefined(SystemAbilityKeywordEnumType, newKeywordValue) && CustomSystemAbilities_Main.customSystemAbilityDict.TryGetValue(newKeywordValue, out CustomSystemAbility customSystemAbility))
             {
                 Main.Logger.LogInfo($"Succesfully recovered copy of customAbility with ID={customSystemAbility.GetCustomIdentifier()} and name={customSystemAbility.GetCustomNameId()}");
-                __result = CreateCopyWithReflection(customSystemAbility);
-                return true;
+                __result = customSystemAbility.Copy();
+                return false;
             }
 
             __result = null;
-            return false;
+            return true;
         }
 
-        private static CustomSystemAbility CreateCopyWithReflection(CustomSystemAbility original)
-        {
-            Il2CppSystem.Type type = original.GetIl2CppType();
-
-            CustomSystemAbility copy = (CustomSystemAbility)Il2CppSystem.Activator.CreateInstance(type);
-            copy.SetSettingAfterCopy(original);
-
-            return copy;
-        }
 
         public static bool HasSystemAbility(this SystemAbilityDetail detail, SYSTEM_ABILITY_KEYWORD newKeyword, out SystemAbility systemAbility)
         {
@@ -108,9 +96,9 @@ namespace MTCustomScripts
     }
 
 
-    public abstract class CustomSystemAbility : BattleSystemAbility
+    public class CustomSystemAbility : BattleSystemAbility
     {
-        public virtual void SetSettingAfterCopy(CustomSystemAbility customAbility)
+        public CustomSystemAbility()
         {
 
         }
@@ -134,11 +122,6 @@ namespace MTCustomScripts
     [System.Serializable]
     public class ModularSystemAbilityStaticDataList
     {
-        public ModularSystemAbilityStaticDataList()
-        {
-
-        }
-
         public static void Initialize(ModularSystemAbilityStaticDataList instance)
         {
             ModularSystemAbilityStaticDataList._instance = instance;
@@ -215,8 +198,8 @@ namespace MTCustomScripts
         }
 
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public System.Collections.Generic.List<ModularSystemAbilityStaticData> modularAbilityStaticDataList = new System.Collections.Generic.List<ModularSystemAbilityStaticData>();
+        [JsonProperty]
+        public System.Collections.Generic.List<ModularSystemAbilityStaticData> modularAbilityStaticDataList;
 
 
 
@@ -233,18 +216,10 @@ namespace MTCustomScripts
     }
 
 
+
+
     public class ModularSystemAbility : CustomSystemAbility
     {
-        public override void SetSettingAfterCopy(CustomSystemAbility customAbility)
-        {
-            ModularSystemAbilityStaticData classInfo = (customAbility as ModularSystemAbility).originalClassInfo;
-            customIdentifier = classInfo.Id;
-            customName = classInfo.Name;
-            originalClassInfo = classInfo;
-            currentClassInfo = classInfo;
-            currentClassInfo.parentAbility = this;
-        }
-
         public ModularSystemAbility(ModularSystemAbilityStaticData classInfo)
         {
             customIdentifier = classInfo.Id;
@@ -252,8 +227,8 @@ namespace MTCustomScripts
             originalClassInfo = classInfo;
             currentClassInfo = classInfo;
             currentClassInfo.parentAbility = this;
-            //bundleModular = new ModularSA();
-            //bundleModular.SetupModular("TIMING:WhenUse/");
+            bundleModular = new ModularSA();
+            bundleModular.SetupModular("TIMING:WhenUse/");
 
             foreach (string modular in classInfo.modularList)
             {
@@ -268,8 +243,6 @@ namespace MTCustomScripts
             }
         }
 
-
-        public override SYSTEM_ABILITY_KEYWORD UniqueKeyword => SYSTEM_ABILITY_KEYWORD.ParryingPowerZero;
 
         public override int GetCustomIdentifier()
         {
@@ -952,7 +925,6 @@ namespace MTCustomScripts
 
         public override int GetExpectedCoinScaleAdder(CoinModel coin)
         {
-            Main.Logger.LogInfo($"Called abilityCoinScaleAdder: permanent={currentClassInfo.getCoinScaleAdder.permanentData} || temporary={currentClassInfo.getCoinScaleAdder.temporaryData} || total={currentClassInfo.getCoinScaleAdder.permanentData + currentClassInfo.getCoinScaleAdder.temporaryData}");
             return currentClassInfo.getCoinScaleAdder.permanentData + currentClassInfo.getCoinScaleAdder.temporaryData;
         }
         public override int GetCoinScaleAdder(CoinModel coin)
@@ -1070,8 +1042,8 @@ namespace MTCustomScripts
 
         public override COIN_RESULT GetForcedCoinResult()
         {
-            if (currentClassInfo.getForcedCoinResult.permanentData < 2) return (COIN_RESULT)currentClassInfo.getForcedCoinResult.permanentData;
-            else if (currentClassInfo.getForcedCoinResult.temporaryData < 2) return (COIN_RESULT)currentClassInfo.getForcedCoinResult.temporaryData;
+            if (currentClassInfo.getForcedCoinResult.permanentData > 2) return (COIN_RESULT)currentClassInfo.getForcedCoinResult.permanentData;
+            else if (currentClassInfo.getForcedCoinResult.temporaryData > 2) return (COIN_RESULT)currentClassInfo.getForcedCoinResult.temporaryData;
             return base.GetForcedCoinResult();
         }
 
@@ -1102,6 +1074,9 @@ namespace MTCustomScripts
             return permanentAtkAdder + temporaryAtkAdder;
         }
 
+
+
+
         //-------------------------------------------------------------------------------------------------------------------------------------------------------------//
         //-------------------------------------------------------------------------------------------------------------------------------------------------------------//
         //-------------------------------------------------------------------------------------------------------------------------------------------------------------//
@@ -1114,7 +1089,7 @@ namespace MTCustomScripts
 
 
         public ModularSA currentModular;
-        //public ModularSA bundleModular;
+        public ModularSA bundleModular;
         private int customIdentifier;
         private string customName;
         public ModularSystemAbilityStaticData originalClassInfo;
@@ -1280,10 +1255,7 @@ namespace MTCustomScripts
         public System.Collections.Generic.List<string> modularList = new System.Collections.Generic.List<string>();
 
 
-        [System.NonSerialized]
         public ModularSystemAbility parentAbility;
-
-        [System.NonSerialized]
         public readonly Dictionary<string, System.Func<ModularSystemAbilityStaticData, object>> lookupDict = new Dictionary<string, System.Func<ModularSystemAbilityStaticData, object>>();
     }
 

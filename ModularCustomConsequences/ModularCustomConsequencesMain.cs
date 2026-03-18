@@ -1,37 +1,40 @@
-﻿using BepInEx;
+﻿using BattleUI;
+using BepInEx;
+using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
+using DiscordRPC;
+using HarmonyLib;
+using Il2CppInterop.Runtime;
+using Il2CppInterop.Runtime.Injection;
+using Il2CppInterop.Runtime.InteropTypes;
+using Il2CppInterop.Runtime.Runtime;
+using Il2CppSystem.Collections.Generic;
 using Lethe;
+using Lethe.Patches;
+using Lua;
 using ModularSkillScripts;
+using ModularSkillScripts.LuaFunction;
+using ModularSkillScripts.Patches;
 using MTCustomScripts.Acquirers;
 using MTCustomScripts.Consequences;
 using MTCustomScripts.LuaFunctions;
-using Lua;
+using MTCustomScripts.Patches;
+using MTCustomScripts.MiscClasses;
+using SharpCompress;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
-using ModularSkillScripts.LuaFunction;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.IO;
-using Lethe.Patches;
-using System.Collections.Generic;
-using Il2CppSystem.Collections.Generic;
-using HarmonyLib;
-using View;
 using UnityEngine;
-using System.Linq;
+using UnityEngine.UI;
 using Utils;
-using Il2CppInterop.Runtime.InteropTypes;
-using Il2CppInterop.Runtime;
-using System.Runtime.InteropServices;
-using Il2CppInterop.Runtime.Runtime;
-using ModularSkillScripts.Patches;
-using SharpCompress;
-using System.ComponentModel;
-using System.Text.RegularExpressions;
-using BepInEx.Logging;
-using DiscordRPC;
-using MTCustomScripts.Patches;
-using BattleUI;
+using View;
 
 namespace MTCustomScripts;
 
@@ -47,20 +50,23 @@ public class Main : BasePlugin
     public const string AUTHOR = "MT";
     public const string GUID = $"{AUTHOR}.{NAME}";
 
+    public Regex waitingRegex = new Regex(@"[wW]ait\(()\)", RegexOptions.Compiled);
+    public System.Collections.Generic.Dictionary<long, System.Collections.Generic.List<MTModData>> storedMTDataDict = new System.Collections.Generic.Dictionary<long, System.Collections.Generic.List<MTModData>>();
+    public System.Collections.Generic.Dictionary<string, System.Type> translatedDataTypesDict = new System.Collections.Generic.Dictionary<string, System.Type>(StringComparer.OrdinalIgnoreCase);
+
     public int special_slotindex = -11;
 
     public System.Collections.Generic.Dictionary<long, BUFF_UNIQUE_KEYWORD> keywordTriggerDict = new System.Collections.Generic.Dictionary<long, BUFF_UNIQUE_KEYWORD>();
     // public BUFF_UNIQUE_KEYWORD keywordTrigger = BUFF_UNIQUE_KEYWORD.None;
-
     public BUFF_UNIQUE_KEYWORD gainbuff_keyword = BUFF_UNIQUE_KEYWORD.None;
-
     public int gainbuff_stack = 0;
-
     public int gainbuff_turn = 0;
-
     public int gainbuff_activeRound = 0;
-
     public ABILITY_SOURCE_TYPE gainbuff_source = ABILITY_SOURCE_TYPE.NONE;
+
+
+    public System.Collections.Generic.Dictionary<BattleUnitModel, int[]> changeMpDict = new System.Collections.Generic.Dictionary<BattleUnitModel, int[]>(); 
+
 
     public System.Collections.Generic.Dictionary<string, string> templateDict = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -147,7 +153,64 @@ public class Main : BasePlugin
             }
         }
     }
-    
+
+    public static object GetCustomMTData(BattleUnitModel unit, string dataID, string dataSource = null, System.Type dataType = null)
+    {
+        long unit_longptr = unit?.Pointer.ToInt64() ?? 0;
+
+        var storedMTDataDict = Main.Instance.storedMTDataDict;
+
+        if (storedMTDataDict.TryGetValue(unit_longptr, out System.Collections.Generic.List<MTModData> foundDataList))
+        {
+            MTModData foundData = null;
+
+            if (dataSource ==  null && dataType == null) foundData = foundDataList.Find(x => x.dataID == dataID);
+            else if (dataSource == null && dataType != null) foundData = foundDataList.Find(x => x.dataID == dataID && x.dataType == dataType);
+            else if (dataSource != null && dataType == null) foundData = foundDataList.Find(x => x.dataID == dataID && x.dataSource == dataSource);
+            else if (dataSource != null && dataType != null) foundData = foundDataList.Find(x => x.dataID == dataID && x.dataSource == dataSource && x.dataType == dataType);
+
+            if (foundData == null) return null;
+            return foundData.dataValue;
+        }
+
+        return null;
+    }
+    public static void SetCustomMTData(long unit_longptr, string dataID, object dataValue, string dataSource = null, System.Type dataType = null)
+    {
+        var storedMTDataDict = Main.Instance.storedMTDataDict;
+
+        if (storedMTDataDict.TryGetValue(unit_longptr, out System.Collections.Generic.List<MTModData> foundDataList))
+        {
+            MTModData foundData = foundDataList.Find(x => x.dataID == dataID);
+            if (foundData == null)
+            {
+                foundData = new MTModData(dataID, dataValue);
+                foundData.dataSource = dataSource;
+                foundData.dataType = dataType;
+                foundDataList.Add(foundData);
+                return;
+            }
+            foundData.dataValue = dataValue;
+        }
+        else
+        {
+            MTModData finalData = new MTModData(dataID, dataValue);
+            finalData.dataSource = dataSource;
+            finalData.dataType = dataType;
+            storedMTDataDict.Add(unit_longptr, new System.Collections.Generic.List<MTModData> { finalData });
+        }
+    }
+
+    public IDataTranslation CreateTranslation(object data, string comparatorKey)
+    {
+        return data switch
+        {
+            string str => new DataTranslation_String(str, comparatorKey),
+            int num when int.TryParse(comparatorKey, out int intComp) => new DataTranslation_Integer(num, comparatorKey, intComp),
+            _ => null
+        };
+    }
+
     public class TestStuffStorage
     {
         private static TestStuffStorage _instance;
@@ -163,10 +226,7 @@ public class Main : BasePlugin
         }
 
         public static ModularSA testModular = new ModularSA();
-
         public static string[] StringArrayGenerator(string circle) { return circle.Split('|'); }
-
-        public static System.Collections.Generic.Dictionary<string, string> stringDict = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         public static System.Collections.Generic.Dictionary<BuffModel, PANIC_TYPE> overrideBuffPanicDict = new System.Collections.Generic.Dictionary<BuffModel, PANIC_TYPE>();
     }
@@ -240,21 +300,20 @@ public class Main : BasePlugin
 
         Harmony harmony = new Harmony(NAME);
         AddTiming(harmony, typeof(RightAfterGetAnyBuff), null, null);
-        AddTiming(harmony, typeof(PanicOrLowMorale), new string[] { "OnPanic", "OnotherPanic", "OnLowMorale", "OnOtherLowMorale" }, new int[] { 90901, 90902, 90903, 90904 });
-        AddTiming(harmony, typeof(RecoverBreak), new string[] { "OnRecoverBreak", "OnOtherRecoverBreak" }, new int[] { 90905, 90906 });
-        AddTiming(harmony, typeof(LoseAnyBuff), new string[] { "OnLoseBuff", "OnBeforeLoseBuff" }, new int[] { 90907, 90908 });
-        AddTiming(null, null, new string[] { "GiveBuffStack", "GainBuffStack", "GainBuffTurn" }, new int[] { 90909, 90910 });
+        AddTiming(harmony, typeof(RecoverSwitchPanic), new string[] { "OnPanic", "OnOtherPanic", "OnLowMorale", "OnOtherLowMorale" }, new int[] { 90901, 90902, 90903, 90904 });
+        AddTiming(null, null, new string[] { "OnRecoverBreak", "OnOtherRecoverBreak" }, new int[] { 90905, 90906 });
+        AddTiming(null, null, new string[] { "OnTakePiledVibration", "OnOtherTakePiledVibration", "OnTakeSwitchingVibration", "OnOtherTakeSwitchingVibration" }, new int[] { 90907, 90908, 90909, 90910 });
+        AddTiming(harmony, typeof(LoseAnyBuff), new string[] { "OnLoseBuff", "OnBeforeLoseBuff" }, new int[] { 90911, 90912 });
+        AddTiming(harmony, typeof(ChangeSP), new string[] { "OnChangeSP", "OnOtherChangeSP", "OnTakeSPDamage", "OnOtherTakeSPDamage" }, new int[] { 90913, 90914, 90915, 90916 });
 
         try
         {
             harmony.PatchAll(typeof(Patch_DefenseChange));
             harmony.PatchAll(typeof(Modular_SetupModular));
-            harmony.PatchAll(typeof(Modular_Consequence));
+            harmony.PatchAll(typeof(Modular_EnactConsequence));
             harmony.PatchAll(typeof(BuffModel_OverwritePanic));
             harmony.PatchAll(typeof(EquipDefenseOperation));
-            harmony.PatchAll(typeof(BuffModelPatch));
             // harmony.PatchAll(typeof(CoinSlotUI_UpdateCoinColor));
-            harmony.PatchAll(typeof(StyxPatch));
             // harmony.PatchAll(typeof(SystemAbilityDetail_Patch));
             // harmony.PatchAll(typeof(RightAfterGiveBuffBySkill));
             
@@ -296,13 +355,13 @@ public class Main : BasePlugin
             MainClass.acquirerDict["gbturn"] = new MTCustomScripts.Acquirers.AcquirerGainBuffTurn();
             MainClass.acquirerDict["gbactiveround"] = new MTCustomScripts.Acquirers.AcquirerGainBuffActiveRound();
             MainClass.acquirerDict["gbsource"] = new MTCustomScripts.Acquirers.AcquirerGainBuffSource();
-            MainClass.acquirerDict["comparestring"] = new MTCustomScripts.Acquirers.AcquirerGetStringComparerResult();
+            MainClass.acquirerDict["comparer"] = new MTCustomScripts.Acquirers.AcquirerGetComparerResult();
             MainClass.acquirerDict["hasbuffkeyword"] = new MTCustomScripts.Acquirers.AcquirerHasBuffKeyword();
             MainClass.acquirerDict["getmapdata"] = new MTCustomScripts.Acquirers.AcquirerGetMapData();
             MainClass.acquirerDict["getfinal"] = new MTCustomScripts.Acquirers.AcquirerGetFinalPower();
             MainClass.acquirerDict["getpaniclevel"] = new MTCustomScripts.Acquirers.AcquirerGetPanicLevel();
             MainClass.acquirerDict["getcoinprobadder"] = new MTCustomScripts.Acquirers.AcquirerGetCoinProbAdder();
-            // MainClass.acquirerDict["getskilldata"] = new MTCustomScripts.Acquirers.AcquirerGetSkillData();
+            MainClass.acquirerDict["getskilldata"] = new MTCustomScripts.Acquirers.AcquirerGetSkillData();
             MainClass.acquirerDict["hasskill"] = new MTCustomScripts.Acquirers.AcquirerHasSkill();
             MainClass.acquirerDict["didusedskillprevturn"] = new MTCustomScripts.Acquirers.AcquirerDidUsedSkillPrevTurn();
             MainClass.acquirerDict["getbuffstackgainedthisturn"] = new MTCustomScripts.Acquirers.AcquirerGetBuffStackGainedThisTurn();
@@ -313,6 +372,7 @@ public class Main : BasePlugin
             MainClass.acquirerDict["getcurrentpower"] = new MTCustomScripts.Acquirers.AcquirerGetCurrentPower();
             MainClass.acquirerDict["getdefaultmaxhp"] = new MTCustomScripts.Acquirers.AcquirerGetDefaultMaxHp();
             MainClass.acquirerDict["gethpincrement"] = new MTCustomScripts.Acquirers.AcquirerGetHpIncrementByLevel();
+            MainClass.acquirerDict["getchangespvalue"] = new MTCustomScripts.Acquirers.AcquirerGetChangedSPValue();
         } catch (System.Exception ex) { Main.Logger.LogError("Error when loading Acquirers: " + ex); }
 
         try
@@ -370,8 +430,9 @@ public class Main : BasePlugin
 
         try
         {
-            var newModularSystemAbilityDatabase = new ModularSystemAbilityStaticDataList();
-            ModularSystemAbilityStaticDataList.Initialize(newModularSystemAbilityDatabase);
-        } catch(System.Exception ex) {Main.Logger.LogError("Error when trying to Add/Initialize 'newModularSystemAbilityDatabase': " + ex);}
+            translatedDataTypesDict.Add("string", typeof(string));
+            translatedDataTypesDict.Add("int", typeof(int));
+            translatedDataTypesDict.Add("integer", typeof(int));
+        } catch (System.Exception ex) { Main.Logger.LogError("Error when trying to add Translation Types: " + ex); }
     }
 }

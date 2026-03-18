@@ -9,6 +9,8 @@ namespace MTCustomScripts.Acquirers
     {
         public int ExecuteAcquirer(ModularSA modular, string section, string circledSection, string[] circles)
         {
+
+
             /*
              * var_1: Single-Target
              * var_2: System-Ability
@@ -16,6 +18,8 @@ namespace MTCustomScripts.Acquirers
              * var_4: Data-Type
              */
 
+            return 0;
+            /*
             if (circles.Length < 5) return 0;
 
             BattleUnitModel unit = modular.GetTargetModel(circles[0]);
@@ -100,6 +104,7 @@ namespace MTCustomScripts.Acquirers
             catch (System.Exception ex) { Main.Logger.LogError($"Unexpected error at SystemAbilityModularAcquirer: {ex}"); }
 
             return finalResult;
+            */
         }
     }
 }

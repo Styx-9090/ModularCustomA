@@ -28,7 +28,6 @@ public class ConsequenceAddCoinAbilityBasicBuff : IModularConsequence
         newCoinAbility._turn = turn;
 
         newCoinAbility.Init(skill.GetCoinByIndex(idx), idx, coinScriptName, 0f, turnLimit, BuffAbilityManager.GetBuffAbility(keyword.ToString())._info);
-
         
 
         // try

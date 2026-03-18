@@ -1,11 +1,10 @@
-﻿using Dungeon.Railway;
+﻿/*
 using Il2CppSystem;
 using ModularSkillScripts;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
-using static MirrorDungeonSelectThemeUIPanel.UIResources;
 
 namespace MTCustomScripts
 {
@@ -181,27 +180,24 @@ namespace MTCustomScripts
         }
 
 
-        public ModularSystemAbilityStaticData GetData(int id)
+        public static ModularSystemAbilityStaticData GetData(int id)
         {
             ModularSystemAbilityStaticData data = Instance.modularAbilityStaticDataList.Find(x => x.Id == id);
             return (data == null) ? null : data;
         }
-        public ModularSystemAbilityStaticData GetData(string name)
+        public static ModularSystemAbilityStaticData GetData(string name)
         {
             ModularSystemAbilityStaticData data = Instance.modularAbilityStaticDataList.Find(x => x.Name == name);
             return (data == null) ? null : data;
         }
-        public System.Collections.Generic.List<ModularSystemAbilityStaticData> GetByMod(string mod)
+        public static System.Collections.Generic.List<ModularSystemAbilityStaticData> GetByMod(string mod)
         {
             System.Collections.Generic.List<ModularSystemAbilityStaticData> data = Instance.modularAbilityStaticDataList.FindAll(x => x.ModFile == mod);
             return (data == null || data.Count <= 0) ? new System.Collections.Generic.List<ModularSystemAbilityStaticData>() : data;
         }
 
-
         [JsonProperty]
         public System.Collections.Generic.List<ModularSystemAbilityStaticData> modularAbilityStaticDataList;
-
-
 
         public static ModularSystemAbilityStaticDataList Instance
         {
@@ -1475,4 +1471,4 @@ namespace MTCustomScripts
         public string temporaryOverwriteConditionalResult = "null";
     }
     */
-}
+//}

@@ -1,4 +1,5 @@
-﻿using System;
+﻿/*
+using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using Il2CppSystem;
@@ -151,3 +152,4 @@ namespace MTCustomScripts.Patches
         public static Il2CppSystem.Type SystemAbilityKeywordEnumType = Il2CppSystem.Type.GetType(nameof(SYSTEM_ABILITY_KEYWORD), true);
     }
 }
+*/

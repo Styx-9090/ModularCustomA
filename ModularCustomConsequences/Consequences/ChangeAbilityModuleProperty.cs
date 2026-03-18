@@ -17,6 +17,7 @@ namespace MTCustomScripts.Consequences
              * var_5: New-Value
              */
 
+            /*
             if (circles.Length < 5) return;
 
             Il2CppSystem.Collections.Generic.List<BattleUnitModel> unitList = modular.GetTargetModelList(circles[0]);
@@ -109,6 +110,7 @@ namespace MTCustomScripts.Consequences
                 }
                 catch (System.Exception ex) { Main.Logger.LogError($"Unexpected error at SystemAbilityModularConsequence: {ex}"); }
             }
+            */
         }
     }
 }

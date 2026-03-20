@@ -24,7 +24,13 @@ internal class RightAfterGetAnyBuff
         
         int actevent = MainClass.timingDict["OnGainBuff"];
 
-        foreach(PassiveModel passiveModel in __instance._passiveDetail.PassiveList)
+        MTCustomScripts.Main.Instance.gainbuff_keyword = keyword;
+        MTCustomScripts.Main.Instance.gainbuff_stack = stack;
+        MTCustomScripts.Main.Instance.gainbuff_turn = turn;
+        MTCustomScripts.Main.Instance.gainbuff_activeRound = activeRound;
+        MTCustomScripts.Main.Instance.gainbuff_source = srcType;
+
+        foreach (PassiveModel passiveModel in __instance._passiveDetail.PassiveList)
         {
             if (!passiveModel.CheckActiveCondition()) continue;
             long passiveModel_intlong = passiveModel.Pointer.ToInt64();
@@ -36,15 +42,10 @@ internal class RightAfterGetAnyBuff
                 BUFF_UNIQUE_KEYWORD trigger = MTCustomScripts.Main.Instance.keywordTriggerDict[modpa.Pointer.ToInt64()];
                 if ((trigger != BUFF_UNIQUE_KEYWORD.None) && (trigger != keyword)) continue;
 
-                MainClass.Logg.LogInfo("Founds modpassive - GainBuff timing: " + modpa.passiveID);
+                // MainClass.Logg.LogInfo("Founds modpassive - GainBuff timing: " + modpa.passiveID);
 
                 modpa.modsa_passiveModel = passiveModel;
                 // modpa.Enact(__instance, null, null, actionOrNull, actevent, timing);
-                MTCustomScripts.Main.Instance.gainbuff_keyword = keyword;
-                MTCustomScripts.Main.Instance.gainbuff_stack = stack;
-                MTCustomScripts.Main.Instance.gainbuff_turn = turn;
-                MTCustomScripts.Main.Instance.gainbuff_activeRound = activeRound;
-                MTCustomScripts.Main.Instance.gainbuff_source = srcType;
                 modpa.Enact(__instance, null, null, null, actevent, timing);
             }
         }
@@ -61,16 +62,23 @@ internal class RightAfterGetAnyBuff
                 BUFF_UNIQUE_KEYWORD trigger = MTCustomScripts.Main.Instance.keywordTriggerDict[modpa.Pointer.ToInt64()];
                 if ((trigger != BUFF_UNIQUE_KEYWORD.None) && (trigger != keyword)) continue;
 
-                MainClass.Logg.LogInfo("Founds modpassive - GainBuff timing: " + modpa.passiveID);
+                // MainClass.Logg.LogInfo("Founds modpassive - GainBuff timing: " + modpa.passiveID);
                 
                 modpa.modsa_passiveModel = passiveModel;
                 // modpa.Enact(__instance, null, null, actionOrNull, actevent, timing);
-                MTCustomScripts.Main.Instance.gainbuff_keyword = keyword;
-                MTCustomScripts.Main.Instance.gainbuff_stack = stack;
-                MTCustomScripts.Main.Instance.gainbuff_turn = turn;
-                MTCustomScripts.Main.Instance.gainbuff_activeRound = activeRound;
-                MTCustomScripts.Main.Instance.gainbuff_source = srcType;
                 modpa.Enact(__instance, null, null, null, actevent, timing);
+            }
+        }
+
+        foreach (BuffModel buffModel in __instance._buffDetail.GetActivatedBuffModelAll())
+        {
+            long buffmodel_intlong = buffModel.Pointer.ToInt64();
+            if (!SkillScriptInitPatch.modbaDict.ContainsKey(buffmodel_intlong)) continue;
+
+            foreach (ModularSA modba in SkillScriptInitPatch.modbaDict[buffmodel_intlong])
+            {
+                modba.modsa_buffModel = buffModel;
+                modba.Enact(__instance, null, null, null, actevent, timing);
             }
         }
     }

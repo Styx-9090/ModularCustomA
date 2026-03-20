@@ -103,22 +103,22 @@ namespace MTCustomScripts.Acquirers
                     result = (int)skill.GetSkillTargetType();
                     break;
                 case "TargetCount":
-                    result = selfAction.GetAttakedTargetList().Count;
+                    result = selfAction.GetAttackedTargetList().Count;
                     break;
                 case "RealTargetCount":
-                    result = selfAction._realAttakedTargetList.Count;
+                    result = selfAction._realAttackedTargetList.Count;
                     break;
                 case "IsTargettingName":
                     if (selfAction == null && isNotCoin) return -1;
-                    result = (selfAction.GetAttakedTargetList().ToSystem().Find(x => x.GetName() == circles[3]) != null) ? 1 : 0;
+                    result = (selfAction.GetAttackedTargetList().ToSystem().Find(x => x.GetName() == circles[3]) != null) ? 1 : 0;
                     break;
                 case "IsTargettingUniqueName":
                     if (selfAction == null && !isNotCoin) return -1;
-                    result = (selfAction.GetAttakedTargetList().ToSystem().Find(x => x.GetUniqueName() == circles[3]) != null) ? 1 : 0;
+                    result = (selfAction.GetAttackedTargetList().ToSystem().Find(x => x.GetUniqueName() == circles[3]) != null) ? 1 : 0;
                     break;
                 case "IsTargettingID":
                     if (selfAction == null && !isNotCoin) return -1;
-                    result = (selfAction.GetAttakedTargetList().ToSystem().Find(x => x.GetCharacterID() == modular.GetNumFromParamString(circles[3])) != null) ? 1 : 0;
+                    result = (selfAction.GetAttackedTargetList().ToSystem().Find(x => x.GetCharacterID() == modular.GetNumFromParamString(circles[3])) != null) ? 1 : 0;
                     break;
                 case "IsTargettingMainName":
                     if (selfAction == null && selfAction.GetMainTarget() == null) return -1;

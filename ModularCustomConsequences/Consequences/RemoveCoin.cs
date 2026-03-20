@@ -1,23 +1,25 @@
 using System;
+using System.Linq;
 using ModularSkillScripts;
 
 namespace MTCustomScripts.Consequences;
 
-public class ConsequenceCoinCancel : IModularConsequence
+public class ConsequenceRemoveCoin : IModularConsequence
 {
 	public void ExecuteConsequence(ModularSA modular, string section, string circledSection, string[] circles)
 	{
-		foreach (string circle in circles)
+		SkillModel skill = (circles[0] == "Self") ? modular.modsa_skillModel : modular.modsa_oppoAction._skill;
+		foreach (string circle in circles.Skip(1))
 		{
 			int idx = modular.GetNumFromParamString(circle);
 			if (idx < 0)
 			{
-				modular.modsa_skillModel.RemoveCoinModelFromListByIndex(modular.modsa_coinModel.GetOriginCoinIndex());
+				skill.RemoveCoinModelFromListByIndex(modular.modsa_coinModel.GetOriginCoinIndex());
 				continue;
 			}
 
-			idx = Math.Min(idx, modular.modsa_skillModel.CoinList.Count - 1);
-			modular.modsa_skillModel.RemoveCoinModelFromListByIndex(idx);
+			idx = Math.Min(idx, skill.CoinList.Count - 1);
+			skill.RemoveCoinModelFromListByIndex(idx);
 		}
 	}
 }

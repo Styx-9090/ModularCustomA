@@ -3,6 +3,7 @@ using Lethe.Patches;
 using ModularSkillScripts;
 using System.Text.RegularExpressions;
 using MTCustomScripts;
+
 internal class Modular_Consequence
 {
     [HarmonyPatch(typeof(ModularSA), "Consequence")]
@@ -11,17 +12,19 @@ internal class Modular_Consequence
     {
         try
         {
-            section = Regex.Replace(section, @"\[([^\[\]]*)\]", match =>
+            section = matchReg.Replace(section, match =>
             {
-                string key = string.Format("{0}{1}", __instance.ptr_intlong, match.Groups[1].Value);
-                return MTCustomScripts.Main.TestStuffStorage.stringDict.TryGetValue(key, out string value) ? value : match.Groups[1].Value;
+                string matchValue = match.Groups[1].Value;
+                string sourceType = match.Groups[2].Success ? match.Groups[2].Value : null;
+
+                string outValue = Main.GetCustomMTData(__instance.modsa_unitModel.Pointer.ToInt64(), match.Groups[1].Value, sourceType);
+                return outValue != null ? outValue : match.Groups[0].Value;
             });
         }
-        catch (System.Exception ex)
-        {
-            MainClass.Logg.LogInfo(ex);
-        }
+        catch (System.Exception ex) { MainClass.Logg.LogInfo(ex); }
 
         return true;
     }
+
+    private static readonly Regex matchReg = Main.Instance.replaceStringRegex;
 }

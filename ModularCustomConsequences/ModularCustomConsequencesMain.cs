@@ -1,37 +1,40 @@
-﻿using BepInEx;
+﻿using BattleUI;
+using BepInEx;
+using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
+using DiscordRPC;
+using HarmonyLib;
+using Il2CppInterop.Runtime;
+using Il2CppInterop.Runtime.Injection;
+using Il2CppInterop.Runtime.InteropTypes;
+using Il2CppInterop.Runtime.Runtime;
+using Il2CppSystem.Collections.Generic;
 using Lethe;
+using Lethe.Patches;
+using Lua;
 using ModularSkillScripts;
+using ModularSkillScripts.LuaFunction;
+using ModularSkillScripts.Patches;
 using MTCustomScripts.Acquirers;
 using MTCustomScripts.Consequences;
 using MTCustomScripts.LuaFunctions;
-using Lua;
+using MTCustomScripts.Patches;
+using MTCustomScripts.MiscClasses;
+using SharpCompress;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
-using ModularSkillScripts.LuaFunction;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.IO;
-using Lethe.Patches;
-using System.Collections.Generic;
-using Il2CppSystem.Collections.Generic;
-using HarmonyLib;
-using View;
 using UnityEngine;
-using System.Linq;
+using UnityEngine.UI;
 using Utils;
-using Il2CppInterop.Runtime.InteropTypes;
-using Il2CppInterop.Runtime;
-using System.Runtime.InteropServices;
-using Il2CppInterop.Runtime.Runtime;
-using ModularSkillScripts.Patches;
-using SharpCompress;
-using System.ComponentModel;
-using System.Text.RegularExpressions;
-using BepInEx.Logging;
-using DiscordRPC;
-using MTCustomScripts.Patches;
-using Il2CppInterop.Runtime.Injection;
+using View;
 
 namespace MTCustomScripts;
 
@@ -43,26 +46,28 @@ public class Main : BasePlugin
 {
     // Edit the below to your own plugin name, version, etc.
     public const string NAME = "MTCustomScripts";
-    public const string VERSION = "8.54.17";
+    public const string VERSION = "8.68.25";
     public const string AUTHOR = "MT";
     public const string GUID = $"{AUTHOR}.{NAME}";
 
+    public Regex waitingRegex = new Regex(@"[wW]ait\(()\)", RegexOptions.Compiled);
+    public Regex replaceStringRegex = new Regex(@"\[([^:\[\]]+)(?::([^\[\]]+))?\]", RegexOptions.Compiled);
+    public System.Collections.Generic.Dictionary<long, System.Collections.Generic.List<MTModData>> storedMTDataDict = [];
+    public System.Collections.Generic.HashSet<int> storedRemoveSkillHash = [];
+
     public int special_slotindex = -11;
 
-    public System.Collections.Generic.Dictionary<long, BUFF_UNIQUE_KEYWORD> keywordTriggerDict = new System.Collections.Generic.Dictionary<long, BUFF_UNIQUE_KEYWORD>();
+    public System.Collections.Generic.Dictionary<long, BUFF_UNIQUE_KEYWORD> keywordTriggerDict = [];
     // public BUFF_UNIQUE_KEYWORD keywordTrigger = BUFF_UNIQUE_KEYWORD.None;
-
     public BUFF_UNIQUE_KEYWORD gainbuff_keyword = BUFF_UNIQUE_KEYWORD.None;
-
     public int gainbuff_stack = 0;
-
     public int gainbuff_turn = 0;
-
     public int gainbuff_activeRound = 0;
-
     public ABILITY_SOURCE_TYPE gainbuff_source = ABILITY_SOURCE_TYPE.NONE;
 
-    public System.Collections.Generic.Dictionary<string, string> templateDict = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    public System.Collections.Generic.Dictionary<BattleUnitModel, int[]> changeMpDict = []; 
+
 
     public class GlobalLuaValues
     {
@@ -79,7 +84,7 @@ public class Main : BasePlugin
         }
 
         private GlobalLuaValues() { }
-        public System.Collections.Generic.Dictionary<string, LuaValue> gvars = new System.Collections.Generic.Dictionary<string, LuaValue>();
+        public System.Collections.Generic.Dictionary<string, LuaValue> gvars = [];
 
         public void SetGlobalValue(string key, LuaValue newVal)
         {
@@ -147,7 +152,39 @@ public class Main : BasePlugin
             }
         }
     }
-    
+
+    public static string GetCustomMTData(long unit_longptr, string dataID, string dataSource = null)
+    {
+        var storedMTDataDict = Main.Instance.storedMTDataDict;
+
+        if (storedMTDataDict.TryGetValue(unit_longptr, out System.Collections.Generic.List<MTModData> foundDataList))
+        {
+            MTModData foundData = null;
+            if (dataSource != null) foundData = foundDataList.Find(x => x.dataID == dataID && x.dataSource == dataSource);
+            else foundData = foundDataList.Find(x => x.dataID == dataID);
+
+            if (foundData == null) return string.Empty;
+            return foundData.dataValue;
+        }
+
+        return string.Empty;
+    }
+    public static void SetCustomMTData(long unit_longptr, string dataID, string dataValue, string dataSource = null)
+    {
+        var storedMTDataDict = Main.Instance.storedMTDataDict;
+
+        if (storedMTDataDict.TryGetValue(unit_longptr, out System.Collections.Generic.List<MTModData> foundDataList))
+        {
+            MTModData foundData = null;
+            if (dataSource != null) foundData = foundDataList.Find(x => x.dataID == dataID && x.dataSource == dataSource);
+            else foundData = foundDataList.Find(x => x.dataID == dataID);
+
+            if (foundData == null) foundDataList.Add(new MTModData(dataID, dataValue, dataSource));
+            else foundData.dataValue = dataValue;
+        }
+        else storedMTDataDict.Add(unit_longptr, [new MTModData(dataID, dataValue, dataSource)]);
+    }
+
     public class TestStuffStorage
     {
         private static TestStuffStorage _instance;
@@ -163,93 +200,16 @@ public class Main : BasePlugin
         }
 
         public static ModularSA testModular = new ModularSA();
-
         public static string[] StringArrayGenerator(string circle) { return circle.Split('|'); }
 
-        public static System.Collections.Generic.Dictionary<string, string> stringDict = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-        public static System.Collections.Generic.Dictionary<BuffModel, PANIC_TYPE> overrideBuffPanicDict = new System.Collections.Generic.Dictionary<BuffModel, PANIC_TYPE>();
+        public static System.Collections.Generic.Dictionary<BuffModel, PANIC_TYPE> overrideBuffPanicDict = [];
     }
 
     public class ConsequenceTest : IModularConsequence
     {
         public void ExecuteConsequence(ModularSA modular, string section, string circledSection, string[] circles)
         {
-            // PatternScript_1341 patternScript_1327 = new PatternScript_1341();
-            // foreach(var appr in patternScript_1327._phaseAppearances.ToArray())
-            // {
-            //     Logger.LogMessage($"Appearance listing: {appr}");
-            // }
-            // CoinAbility newCA = new CoinAbility_OverwriteToSuperCoin();
-            // COIN_COLOR_TYPE cct = COIN_COLOR_TYPE.GOLD;
-            // int grade = 1;
-            // int cindex = modular.GetNumFromParamString(circles[0]);
-            // switch (circles[1])
-            // {
-            //     default:
-            //         cct = COIN_COLOR_TYPE.GOLD;
-            //         grade = 1;
-            //         break;
-            //     case "green":
-            //         cct = COIN_COLOR_TYPE.GREEN;
-            //         grade = 99;
-            //         break;
-            //     case "purple":
-            //         cct = COIN_COLOR_TYPE.PURPLE;
-            //         grade = 2;
-            //         break;
-            //     case "grey":
-            //         cct = COIN_COLOR_TYPE.GREY;
-            //         grade = 2;
-            //         break;
-            // }
-            // newCA.OverwriteCoinColor(out cct);
-            // newCA.OverwriteCoinGrade(out grade);
-
-            // Il2CppSystem.Collections.Generic.List<BattleUnitModel> targetList = modular.GetTargetModelList(circles[0]);
-            // foreach(BattleUnitModel target in targetList)
-            // {
-            //     foreach(CoinModel coinModel in modular.modsa_skillModel.CoinList)
-            //     {
-            //         coinModel._coinAbilityList.Add(newCA);
-            //     }
-            // }
-            // if (string.Equals(circles[0], "all", StringComparison.OrdinalIgnoreCase))
-            // {
-            //     foreach (CoinModel coin in modular.modsa_skillModel.CoinList)
-            //     {
-            //         Singleton<SkillAbility_OverwriteToSuperCoinViaBuffCheck>.Instance.AddScriptToCoin(coin);
-            //     }
-            // }
-            // else
-            // {
-            //     foreach (string circle in circles)
-            //     {
-            //         int idx = modular.GetNumFromParamString(circle);
-            //         if (idx < 0)
-            //         {
-            //             Singleton<SkillAbility_OverwriteToSuperCoinViaBuffCheck>.Instance.AddScriptToCoin(
-            //                 modular.modsa_skillModel.GetCoin(modular.modsa_coinModel.GetOriginCoinIndex()));
-            //             continue;
-            //         }
-
-            //         idx = Math.Min(idx, modular.modsa_skillModel.CoinList.Count - 1);
-            //         Singleton<SkillAbility_OverwriteToSuperCoinViaBuffCheck>.Instance
-            //             .AddScriptToCoin(modular.modsa_skillModel.GetCoin(idx));
-            //     }
-            // }
-
-            Il2CppSystem.Collections.Generic.List<BattleUnitModel> targetList = modular.GetTargetModelList(circles[0]);
-            if (targetList.Count < 1) return;
-            BUFF_UNIQUE_KEYWORD keyword = CustomBuffs.ParseBuffUniqueKeyword(circles[1]);
-            if (keyword.ToString() != circles[1]) keyword = BUFF_UNIQUE_KEYWORD.None;
-            int loseStack = modular.GetNumFromParamString(circles[2]);
-            int loseTurn = modular.GetNumFromParamString(circles[3]);
-            // Il2CppSystem.Nullable<int> limit = null;
-            foreach(BattleUnitModel target in targetList)
-            {
-                target.ForceToActivateBuffEffect(keyword, modular.modsa_unitModel, loseStack, loseTurn, null, modular.battleTiming);
-            }
+            Singleton<SinManager>.Instance.RefreshTargetManager();
         }
     }
 
@@ -257,11 +217,10 @@ public class Main : BasePlugin
     {
         public void ExecuteConsequence(ModularSA modular, string section, string circledSection, string[] circles)
         {
-            Il2CppSystem.Collections.Generic.List<BattleUnitModel> targetList = modular.GetTargetModelList(circles[0]);
-            int newMp = modular.GetNumFromParamString(circles[1]);
-            foreach(BattleUnitModel target in targetList)
+            CoinSlotListUI coinList = UnityEngine.Object.FindObjectOfType<CoinSlotListUI>();
+            foreach(CoinSlotUI coinSlotUI in coinList._slots)
             {
-                target.ChangeMp(newMp);
+                coinSlotUI.UpdateCoinColor(new Color(0f, 0.5f, 0.5f));
             }
         }
     }
@@ -315,23 +274,26 @@ public class Main : BasePlugin
 
         Harmony harmony = new Harmony(NAME);
         AddTiming(harmony, typeof(RightAfterGetAnyBuff), null, null);
-        AddTiming(harmony, typeof(PanicOrLowMorale), new string[] { "OnPanic", "OnotherPanic", "OnLowMorale", "OnOtherLowMorale" }, new int[] { 90901, 90902, 90903, 90904 });
-        AddTiming(harmony, typeof(RecoverBreak), new string[] { "OnRecoverBreak", "OnOtherRecoverBreak" }, new int[] { 90905, 90906 });
-        AddTiming(harmony, typeof(LoseAnyBuff), new string[] { "OnLoseBuff", "OnBeforeLoseBuff" }, new int[] { 90907, 90908 });
-        AddTiming(null, null, new string[] { "GiveBuffStack", "GiveBuffTurn", "GainBuffStack", "GainBuffTurn" }, new int[] { 90909, 90910, 90911, 90912 });
+        AddTiming(harmony, typeof(GetSkillIdsPatch), null, null);
+
+        AddTiming(harmony, typeof(RecoverSwitchPanic), ["OnPanic", "OnOtherPanic", "OnLowMorale", "OnOtherLowMorale"], [90901, 90902, 90903, 90904]);
+        AddTiming(null, null, ["OnRecoverBreak", "OnOtherRecoverBreak"], [90905, 90906]);
+        AddTiming(null, null, ["OnTakePiledVibration", "OnOtherTakePiledVibration", "OnTakeSwitchingVibration", "OnOtherTakeSwitchingVibration"], [90907, 90908, 90909, 90910]);
+        AddTiming(harmony, typeof(LoseAnyBuff), ["OnLoseBuff", "OnBeforeLoseBuff"], [90911, 90912]);
+        AddTiming(harmony, typeof(ChangeSP), ["OnChangeSP", "OnOtherChangeSP", "OnTakeSPDamage", "OnOtherTakeSPDamage"], [90913, 90914, 90915, 90916]);
 
         try
         {
             harmony.PatchAll(typeof(Patch_DefenseChange));
             harmony.PatchAll(typeof(Modular_SetupModular));
-            harmony.PatchAll(typeof(Modular_Consequence));
+            harmony.PatchAll(typeof(Modular_EnactConsequence));
             harmony.PatchAll(typeof(BuffModel_OverwritePanic));
             harmony.PatchAll(typeof(EquipDefenseOperation));
-            harmony.PatchAll(typeof(BuffModelPatch));
-            harmony.PatchAll(typeof(Test_Patch));
-            harmony.PatchAll(typeof(RemoveSkillRestore_Patch));
+            // harmony.PatchAll(typeof(CoinSlotUI_UpdateCoinColor));
+            // harmony.PatchAll(typeof(SystemAbilityDetail_Patch));
             // harmony.PatchAll(typeof(RightAfterGiveBuffBySkill));
-
+            
+            // harmony.PatchAll(typeof(RightAfterGetAnyBuff));
             // MainClass.timingDict.Add("OnGainBuff", 1337);
             // MainClass.timingDict.Add("OnInflictBuff", 1733);
         }
@@ -348,9 +310,11 @@ public class Main : BasePlugin
             MainClass.luaFunctionDict["gbkeyword"] = new MTCustomScripts.LuaFunctions.LuaFunctionGainBuffKeyword();
             MainClass.luaFunctionDict["getcurrentmapid"] = new MTCustomScripts.LuaFunctions.GetCurrentMapID();
             MainClass.luaFunctionDict["listrelatedkeywords"] = new MTCustomScripts.LuaFunctions.LuaFunctionListRelatedKeywords();
-            MainClass.luaFunctionDict["getappearanceid"] = new MTCustomScripts.LuaFunctions.LuaFunctionGetAppearanceID(); //new
-            MainClass.luaFunctionDict["listbreakvalues"] = new MTCustomScripts.LuaFunctions.LuaFunctionListBreakSectionValue(); //new
+            MainClass.luaFunctionDict["getappearanceid"] = new MTCustomScripts.LuaFunctions.LuaFunctionGetAppearanceID();
+            MainClass.luaFunctionDict["listbreakvalues"] = new MTCustomScripts.LuaFunctions.LuaFunctionListBreakSectionValue();
+            MainClass.luaFunctionDict["listegoskillids"] = new MTCustomScripts.LuaFunctions.LuaFunctionListEgoSkillIDs();
             // MainClass.luaFunctionDict["getrandombuff"] = new LuaFunctionGetRandomBuff(); //Object reference not set to an instance of an object
+            // MainClass.luaFunctionDict["listskilltargets"] = new MTCustomScripts.LuaFunctions.LuaFunctionListSkillTargets();
         }
         catch (System.Exception ex) { Main.Logger.LogError("Error when loading LUA functions: " + ex); }
 
@@ -367,13 +331,13 @@ public class Main : BasePlugin
             MainClass.acquirerDict["gbturn"] = new MTCustomScripts.Acquirers.AcquirerGainBuffTurn();
             MainClass.acquirerDict["gbactiveround"] = new MTCustomScripts.Acquirers.AcquirerGainBuffActiveRound();
             MainClass.acquirerDict["gbsource"] = new MTCustomScripts.Acquirers.AcquirerGainBuffSource();
-            MainClass.acquirerDict["comparestring"] = new MTCustomScripts.Acquirers.AcquirerGetStringComparerResult();
+            MainClass.acquirerDict["comparer"] = new MTCustomScripts.Acquirers.AcquirerGetComparerResult();
             MainClass.acquirerDict["hasbuffkeyword"] = new MTCustomScripts.Acquirers.AcquirerHasBuffKeyword();
             MainClass.acquirerDict["getmapdata"] = new MTCustomScripts.Acquirers.AcquirerGetMapData();
             MainClass.acquirerDict["getfinal"] = new MTCustomScripts.Acquirers.AcquirerGetFinalPower();
             MainClass.acquirerDict["getpaniclevel"] = new MTCustomScripts.Acquirers.AcquirerGetPanicLevel();
             MainClass.acquirerDict["getcoinprobadder"] = new MTCustomScripts.Acquirers.AcquirerGetCoinProbAdder();
-            MainClass.acquirerDict["getskilldata"] = new MTCustomScripts.Acquirers.AcquirerGetSkillData();
+            // MainClass.acquirerDict["getskilldata"] = new MTCustomScripts.Acquirers.AcquirerGetSkillData();
             MainClass.acquirerDict["hasskill"] = new MTCustomScripts.Acquirers.AcquirerHasSkill();
             MainClass.acquirerDict["didusedskillprevturn"] = new MTCustomScripts.Acquirers.AcquirerDidUsedSkillPrevTurn();
             MainClass.acquirerDict["getbuffstackgainedthisturn"] = new MTCustomScripts.Acquirers.AcquirerGetBuffStackGainedThisTurn();
@@ -381,6 +345,11 @@ public class Main : BasePlugin
             MainClass.acquirerDict["isactionable"] = new MTCustomScripts.Acquirers.AcquirerIsActionable();
             MainClass.acquirerDict["getopposkillid"] = new MTCustomScripts.Acquirers.AcquirerGetOppoSkillId();
             MainClass.acquirerDict["getabilitymoduleproperty"] = new MTCustomScripts.Acquirers.AcquirerGetAbilityModuleProperty();
+            MainClass.acquirerDict["getcurrentpower"] = new MTCustomScripts.Acquirers.AcquirerGetCurrentPower();
+            MainClass.acquirerDict["getdefaultmaxhp"] = new MTCustomScripts.Acquirers.AcquirerGetDefaultMaxHp();
+            MainClass.acquirerDict["gethpincrement"] = new MTCustomScripts.Acquirers.AcquirerGetHpIncrementByLevel();
+            MainClass.acquirerDict["getchangespvalue"] = new MTCustomScripts.Acquirers.AcquirerGetChangedSPValue();
+            MainClass.acquirerDict["getmtdata"] = new MTCustomScripts.Acquirers.AcquirerGetMTData();
         } catch (System.Exception ex) { Main.Logger.LogError("Error when loading Acquirers: " + ex); }
 
         try
@@ -407,9 +376,24 @@ public class Main : BasePlugin
             // MainClass.consequenceDict["changetakebuffdmg"] = new MTCustomScripts.Consequences.ConsequenceChangeTakeBuffDamage(); //doesnt work
             MainClass.consequenceDict["lbreak"] = new MTCustomScripts.Consequences.ConsequenceLBreak();
             MainClass.consequenceDict["addcoin"] = new MTCustomScripts.Consequences.ConsequenceAddCoin();
-            MainClass.consequenceDict["removecoin"] = new MTCustomScripts.Consequences.ConsequenceCoinCancel();
+            MainClass.consequenceDict["removecoin"] = new MTCustomScripts.Consequences.ConsequenceRemoveCoin();
             MainClass.consequenceDict["changecolor"] = new MTCustomScripts.Consequences.ConsequenceChangeCoinType();
             MainClass.consequenceDict["changeabilitymoduleproperty"] = new MTCustomScripts.Consequences.ConsequenceChangeAbilityModuleProperty();
+            MainClass.consequenceDict["clearskillabilities"] = new MTCustomScripts.Consequences.ConsequenceClearSkillAbilities();
+            MainClass.consequenceDict["clearcoinabilities"] = new MTCustomScripts.Consequences.ConsequenceClearCoinAbilities();
+            MainClass.consequenceDict["addskillability"] = new MTCustomScripts.Consequences.ConsequenceAddSkillAbility();
+            MainClass.consequenceDict["removealltargetexceptmaintarget"] = new MTCustomScripts.Consequences.ConsequenceRemoveAllTargetExceptMainTarget();
+            MainClass.consequenceDict["modifysubtarget"] = new MTCustomScripts.Consequences.ConsequenceModifySubTargetList();
+            MainClass.consequenceDict["setmaintarget"] = new MTCustomScripts.Consequences.ConsequenceSetMainTarget();
+            MainClass.consequenceDict["addcoinability"] = new MTCustomScripts.Consequences.ConsequenceAddCoinAbility();
+            MainClass.consequenceDict["setspusage"] = new MTCustomScripts.Consequences.ConsequenceSetSpUsage();
+            // MainClass.consequenceDict["addego"] = new MTCustomScripts.Consequences.ConsequenceAddEgo();
+            MainClass.consequenceDict["disableidle"] = new MTCustomScripts.Consequences.ConsequenceDisableIdle();
+            MainClass.consequenceDict["setskillamount"] = new MTCustomScripts.Consequences.ConsequenceSetSkillAmount();
+            MainClass.consequenceDict["setlevel"] = new MTCustomScripts.Consequences.ConsequenceSetLevel();
+            MainClass.consequenceDict["setmaxhp"] = new MTCustomScripts.Consequences.ConsequenceSetMaxHp();
+            MainClass.consequenceDict["addcoinabilitybasicbuff"] = new MTCustomScripts.Consequences.ConsequenceAddCoinAbilityBasicBuff();
+            MainClass.consequenceDict["setmtdata"] = new MTCustomScripts.Consequences.ConsequenceSetMTData();
         } catch (System.Exception ex) { Main.Logger.LogError("Error when loading Consequences: " + ex); }
 
         try
@@ -421,10 +405,5 @@ public class Main : BasePlugin
             // MainClass.consequenceDict["testthree"] = new ConsequenceTest3();
             // MainClass.consequenceDict["reload"] = new ConsequenceReload();
         } catch (System.Exception ex) { Main.Logger.LogError("Error when loading Test Consequences/Acquirers: " + ex); }
-
-        /*
-        var newModularSystemAbilityDatabase = new ModularSystemAbilityStaticDataList();
-        ModularSystemAbilityStaticDataList.Initialize(newModularSystemAbilityDatabase);
-        */
     }
 }

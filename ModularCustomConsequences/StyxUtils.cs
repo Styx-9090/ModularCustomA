@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using Lethe.Patches;
 using ModularSkillScripts;
+using ModularSkillScripts.Patches;
 using System;
 
 namespace MTCustomScripts
@@ -280,10 +281,110 @@ namespace MTCustomScripts
                 else list.Add(enumResult);
             }
         }
+        
+        public static void GenericModularPatches(BattleUnitModel __instance, int actevent, int actevent_other, BATTLE_EVENT_TIMING timing, SkillModel skillModel_inst = null, BattleActionModel selfAction = null, BattleActionModel oppoAction = null, BattleUnitModel killer = null)
+        {
+            foreach (PassiveModel passiveModel in __instance._passiveDetail.PassiveList)
+            {
+                if (!passiveModel.CheckActiveCondition()) continue;
+                long passiveModel_intlong = passiveModel.Pointer.ToInt64();
+                if (!SkillScriptInitPatch.modpaDict.ContainsKey(passiveModel_intlong)) continue;
 
+                foreach (ModularSA modpa in SkillScriptInitPatch.modpaDict[passiveModel_intlong])
+                {
+                    modpa.modsa_passiveModel = passiveModel;
+                    if (killer != null) modpa.modsa_killerModel = killer;
+                    modpa.Enact(__instance, skillModel_inst, selfAction, oppoAction, actevent, timing);
+                }
+            }
+
+            foreach (PassiveModel passiveModel in __instance._passiveDetail.EgoPassiveList)
+            {
+                if (!passiveModel.CheckActiveCondition()) continue;
+                long passiveModel_intlong = passiveModel.Pointer.ToInt64();
+                if (!SkillScriptInitPatch.modpaDict.ContainsKey(passiveModel_intlong)) continue;
+
+                foreach (ModularSA modpa in SkillScriptInitPatch.modpaDict[passiveModel_intlong])
+                {
+                    modpa.modsa_passiveModel = passiveModel;
+                    if (killer != null) modpa.modsa_killerModel = killer;
+                    modpa.Enact(__instance, skillModel_inst, selfAction, oppoAction, actevent, timing);
+                }
+            }
+
+            foreach (BuffModel buffModel in __instance._buffDetail.GetActivatedBuffModelAll())
+            {
+                long buffmodel_intlong = buffModel.Pointer.ToInt64();
+                if (!SkillScriptInitPatch.modbaDict.ContainsKey(buffmodel_intlong)) continue;
+
+                foreach (ModularSA modba in SkillScriptInitPatch.modbaDict[buffmodel_intlong])
+                {
+                    modba.modsa_buffModel = buffModel;
+                    if (killer != null) modba.modsa_killerModel = killer;
+                    modba.Enact(__instance, skillModel_inst, selfAction, oppoAction, actevent, timing);
+                }
+            }
+
+            if (actevent_other == 0) return;
+
+            BattleObjectManager battleObjManager_inst = SingletonBehavior<BattleObjectManager>.Instance;
+            foreach (BattleUnitModel unit in battleObjManager_inst.GetAliveListExceptSelf(__instance, false, false))
+            {
+                foreach (PassiveModel passiveModel in unit._passiveDetail.PassiveList)
+                {
+                    if (!passiveModel.CheckActiveCondition()) continue;
+                    long passiveModel_intlong = passiveModel.Pointer.ToInt64();
+                    if (!SkillScriptInitPatch.modpaDict.ContainsKey(passiveModel_intlong)) continue;
+
+                    foreach (ModularSA modpa in SkillScriptInitPatch.modpaDict[passiveModel_intlong])
+                    {
+                        modpa.modsa_passiveModel = passiveModel;
+                        if (killer != null) modpa.modsa_killerModel = killer;
+                        modpa.modsa_victimModel = __instance;
+                        modpa.Enact(unit, skillModel_inst, selfAction, oppoAction, actevent, timing);
+                    }
+                }
+                foreach (PassiveModel passiveModel in unit._passiveDetail.EgoPassiveList)
+                {
+                    if (!passiveModel.CheckActiveCondition()) continue;
+                    long passiveModel_intlong = passiveModel.Pointer.ToInt64();
+                    if (!SkillScriptInitPatch.modpaDict.ContainsKey(passiveModel_intlong)) continue;
+
+                    foreach (ModularSA modpa in SkillScriptInitPatch.modpaDict[passiveModel_intlong])
+                    {
+                        modpa.modsa_passiveModel = passiveModel;
+                        if (killer != null) modpa.modsa_killerModel = killer;
+                        modpa.modsa_victimModel = __instance;
+                        modpa.Enact(unit, skillModel_inst, selfAction, oppoAction, actevent, timing);
+                    }
+                }
+                foreach (BuffModel buffModel in unit._buffDetail.GetActivatedBuffModelAll())
+                {
+                    long buffmodel_intlong = buffModel.Pointer.ToInt64();
+                    if (!SkillScriptInitPatch.modbaDict.ContainsKey(buffmodel_intlong)) continue;
+
+                    foreach (ModularSA modba in SkillScriptInitPatch.modbaDict[buffmodel_intlong])
+                    {
+                        modba.modsa_buffModel = buffModel;
+                        if (killer != null) modba.modsa_killerModel = killer;
+                        modba.modsa_victimModel = __instance;
+                        modba.Enact(unit, skillModel_inst, selfAction, oppoAction, actevent, timing);
+                    }
+                }
+            }
+        }
+
+        /*
         public static void TreatCoinAbilities(SkillCoinData coinData, string fullAbility)
         {
-            string[] stringAbilityArray = (fullAbility.Contains('|')) ? fullAbility.Split(['|'], System.StringSplitOptions.RemoveEmptyEntries) : new string[] { fullAbility };
+            string[] stringAbilityArray = new string[0];
+
+            if (!fullAbility.Contains('|'))
+            {
+                stringAbilityArray.AddToArray<string>(fullAbility);
+            }
+
+            stringAbilityArray.AddRangeToArray<string>(fullAbility.Split(['|'], System.StringSplitOptions.RemoveEmptyEntries));
 
             for (int i = 0; i < stringAbilityArray.Length; i++)
             {
@@ -363,5 +464,6 @@ namespace MTCustomScripts
                 coinData.abilityScriptList.Add(currentAbility);
             }
         }
+        */
     }
 }

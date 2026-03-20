@@ -27,11 +27,13 @@
 			https://nuget.bepinex.dev/v3/index.json;
 			https://nuget.samboy.dev/v3/index.json
 		</RestoreAdditionalProjectSources>
+		<!-- <LimbusCompanyFolder>D:\Zwei</LimbusCompanyFolder> -->
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.*" IncludeAssets="compile" />
 		<PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
+		<!-- <PackageReference Include="System.Runtime.CompilerServices.IsUnmanagedAttribute" Version="6.1.2" /> -->
 	</ItemGroup>
 
 	<!-- ~~~~~ ASSEMBLY REFERENCES ~~~~~ -->
@@ -41,7 +43,7 @@
 			<HintPath>%(Identity)</HintPath>
 			<Private>false</Private>
 		</Reference>
-		<Reference Include="$(LimbusCompanyFolder)\BepInEx\interop\*.dll">
+		<Reference Include="$(LimbusCompanyFolder)\BepInEx\interop\*.dll" Exclude="$(LimbusCompanyFolder)\BepInEx\interop\Newtonsoft.Json.dll">
 			<HintPath>%(Identity)</HintPath>
 			<Private>false</Private>
 		</Reference>

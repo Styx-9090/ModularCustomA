@@ -29,113 +29,113 @@
 
 //             int result = -1;
 
-//             switch (circles[2])
-//             {
-//                 case "Scale":
-//                     result = skill.GetCoinScale();
-//                     break;
-//                 case "CoinScaleAdder":
-//                     result = (selfAction != null && oppoAction != null) ? skill.GetCoinScaleAdder(selfAction, selectedCoins[0], oppoAction) : -1;
-//                     break;
-//                 case "Final":
-//                     result = (selfAction != null) ? skill.GetSkillPowerResultAdder(selfAction, modular.battleTiming, selectedCoins[0]) : -1;
-//                     break;
-//                 case "Clash":
-//                     result = (selfAction != null) ? skill.GetParryingResultAdder(selfAction, selfAction.skillPowerResultValue, oppoAction, oppoAction.skillPowerResultValue) : -1;
-//                     break;
-//                 case "Weight":
-//                     result = (selfAction != null) ? skill.GetAttackWeight(selfAction) : -1;
-//                     break;
-//                 case "ogWeight":
-//                     result = skill.GetOriginAttackWeight();
-//                     break;
-//                 case "Evade":
-//                     result = (selfAction != null || oppoAction != null) ? skill.GetEvadeSkillPowerAdder(selfAction, oppoAction) : -1;
-//                     break;
-//                 case "Default":
-//                     result = skill.GetSkillDefaultPower();
-//                     break;
-//                 case "DefaultAdder":
-//                     result = skill.GetSkillPowerAdder(selfAction, rollType, skill.CoinList);
-//                     break;
-//                 case "Motion":
-//                     result = (int)skill.GetSkillMotion();
-//                     break;
-//                 case "Level":
-//                     result = unit.GetSkillLevel(skill, null, out _, out _);
-//                     break;
-//                 case "SkillAtkLevel":
-//                     result = skill.GetSkillLevelCorrection();
-//                     break;
-//                 case "DefType":
-//                     result = (int)skill.GetDefenseType();
-//                     break;
-//                 case "AtkType":
-//                     result = (int)skill.GetAttackType();
-//                     break;
-//                 case "CanDuel":
-//                     if (selfAction == null || oppoAction == null) return -1;
-//                     result = (skill.CanDuel(selfAction, oppoAction)) ? 1 : 0;
-//                     break;
-//                 case "Rank":
-//                     result = skill.GetSkillTier();
-//                     break;
-//                 case "Fixed":
-//                     if (selfAction == null) return -1;
-//                     result = (skill.CanBeChangedTarget(selfAction)) ? 1 : 0;
-//                     break;
-//                 case "Attribute":
-//                     result = (int)skill.GetAttributeType();
-//                     break;
-//                 case "EgoType":
-//                     result = (int)skill.GetSkillEgoType();
-//                     break;
-//                 case "IsAction":
-//                     result = (unit._actionList.ToSystem().Find(x => x.Skill == skill) != null) ? 1 : 0;
-//                     break;
-//                 case "UseCount":
-//                     result = unit._actionList.ToSystem().FindAll(x => x.GetSkillID() == skill.GetID()).Count;
-//                     break;
-//                 case "TargetClash":
-//                     result = (selfAction != null || oppoAction != null) ? skill.GetOpponentParryingResultAdder(selfAction, selfAction.skillPowerResultValue, oppoAction, oppoAction.skillPowerResultValue) : -1 ;
-//                     break;
-//                 case "TargetType":
-//                     result = (int)skill.GetSkillTargetType();
-//                     break;
-//                 case "TargetCount":
-//                     result = selfAction.GetAttakedTargetList().Count;
-//                     break;
-//                 case "RealTargetCount":
-//                     result = selfAction._realAttakedTargetList.Count;
-//                     break;
-//                 case "IsTargettingName":
-//                     if (selfAction == null && isNotCoin) return -1;
-//                     result = (selfAction.GetAttakedTargetList().ToSystem().Find(x => x.GetName() == circles[3]) != null) ? 1 : 0;
-//                     break;
-//                 case "IsTargettingUniqueName":
-//                     if (selfAction == null && !isNotCoin) return -1;
-//                     result = (selfAction.GetAttakedTargetList().ToSystem().Find(x => x.GetUniqueName() == circles[3]) != null) ? 1 : 0;
-//                     break;
-//                 case "IsTargettingID":
-//                     if (selfAction == null && !isNotCoin) return -1;
-//                     result = (selfAction.GetAttakedTargetList().ToSystem().Find(x => x.GetCharacterID() == modular.GetNumFromParamString(circles[3])) != null) ? 1 : 0;
-//                     break;
-//                 case "IsTargettingMainName":
-//                     if (selfAction == null && selfAction.GetMainTarget() == null) return -1;
-//                     result = (selfAction.GetMainTarget().GetName() == circles[3]) ? 1 : 0;
-//                     break;
-//                 case "IsTargettingMainUniqueName":
-//                     if (selfAction == null && selfAction.GetMainTarget() == null) return -1;
-//                     result = (selfAction.GetMainTarget().GetUniqueName() == circles[3]) ? 1 : 0;
-//                     break;
-//                 case "IsTargettingMainID":
-//                     if (selfAction == null && selfAction.GetMainTarget() == null) return -1;
-//                     result = (selfAction.GetMainTarget().GetCharacterID() == modular.GetNumFromParamString(circles[3])) ? 1 : 0;
-//                     break;
-//                 default:
-//                     result = skill.GetID();
-//                 break;
-//             }
+            switch (circles[2])
+            {
+                case "Scale":
+                    result = skill.GetCoinScale();
+                    break;
+                case "CoinScaleAdder":
+                    result = (selfAction != null && oppoAction != null) ? skill.GetCoinScaleAdder(selfAction, selectedCoins[0], oppoAction) : -1;
+                    break;
+                case "Final":
+                    result = (selfAction != null) ? skill.GetSkillPowerResultAdder(selfAction, modular.battleTiming, selectedCoins[0]) : -1;
+                    break;
+                case "Clash":
+                    result = (selfAction != null) ? skill.GetParryingResultAdder(selfAction, selfAction.skillPowerResultValue, oppoAction, oppoAction.skillPowerResultValue) : -1;
+                    break;
+                case "Weight":
+                    result = (selfAction != null) ? skill.GetAttackWeight(selfAction) : -1;
+                    break;
+                case "ogWeight":
+                    result = skill.GetOriginAttackWeight();
+                    break;
+                case "Evade":
+                    result = (selfAction != null || oppoAction != null) ? skill.GetEvadeSkillPowerAdder(selfAction, oppoAction) : -1;
+                    break;
+                case "Default":
+                    result = skill.GetSkillDefaultPower();
+                    break;
+                case "DefaultAdder":
+                    result = skill.GetSkillPowerAdder(selfAction, rollType, skill.CoinList);
+                    break;
+                case "Motion":
+                    result = (int)skill.GetSkillMotion();
+                    break;
+                case "Level":
+                    result = unit.GetSkillLevel(skill, null, out _, out _);
+                    break;
+                case "SkillAtkLevel":
+                    result = skill.GetSkillLevelCorrection();
+                    break;
+                case "DefType":
+                    result = (int)skill.GetDefenseType();
+                    break;
+                case "AtkType":
+                    result = (int)skill.GetAttackType();
+                    break;
+                case "CanDuel":
+                    if (selfAction == null || oppoAction == null) return -1;
+                    result = (skill.CanDuel(selfAction, oppoAction)) ? 1 : 0;
+                    break;
+                case "Rank":
+                    result = skill.GetSkillTier();
+                    break;
+                case "Fixed":
+                    if (selfAction == null) return -1;
+                    result = (skill.CanBeChangedTarget(selfAction)) ? 1 : 0;
+                    break;
+                case "Attribute":
+                    result = (int)skill.GetAttributeType();
+                    break;
+                case "EgoType":
+                    result = (int)skill.GetSkillEgoType();
+                    break;
+                case "IsAction":
+                    result = (unit._actionList.ToSystem().Find(x => x.Skill == skill) != null) ? 1 : 0;
+                    break;
+                case "UseCount":
+                    result = unit._actionList.ToSystem().FindAll(x => x.GetSkillID() == skill.GetID()).Count;
+                    break;
+                case "TargetClash":
+                    result = (selfAction != null || oppoAction != null) ? skill.GetOpponentParryingResultAdder(selfAction, selfAction.skillPowerResultValue, oppoAction, oppoAction.skillPowerResultValue) : -1 ;
+                    break;
+                case "TargetType":
+                    result = (int)skill.GetSkillTargetType();
+                    break;
+                case "TargetCount":
+                    result = selfAction.GetAttackedTargetList().Count;
+                    break;
+                case "RealTargetCount":
+                    result = selfAction._realAttackedTargetList.Count;
+                    break;
+                case "IsTargettingName":
+                    if (selfAction == null && isNotCoin) return -1;
+                    result = (selfAction.GetAttackedTargetList().ToSystem().Find(x => x.GetName() == circles[3]) != null) ? 1 : 0;
+                    break;
+                case "IsTargettingUniqueName":
+                    if (selfAction == null && !isNotCoin) return -1;
+                    result = (selfAction.GetAttackedTargetList().ToSystem().Find(x => x.GetUniqueName() == circles[3]) != null) ? 1 : 0;
+                    break;
+                case "IsTargettingID":
+                    if (selfAction == null && !isNotCoin) return -1;
+                    result = (selfAction.GetAttackedTargetList().ToSystem().Find(x => x.GetCharacterID() == modular.GetNumFromParamString(circles[3])) != null) ? 1 : 0;
+                    break;
+                case "IsTargettingMainName":
+                    if (selfAction == null && selfAction.GetMainTarget() == null) return -1;
+                    result = (selfAction.GetMainTarget().GetName() == circles[3]) ? 1 : 0;
+                    break;
+                case "IsTargettingMainUniqueName":
+                    if (selfAction == null && selfAction.GetMainTarget() == null) return -1;
+                    result = (selfAction.GetMainTarget().GetUniqueName() == circles[3]) ? 1 : 0;
+                    break;
+                case "IsTargettingMainID":
+                    if (selfAction == null && selfAction.GetMainTarget() == null) return -1;
+                    result = (selfAction.GetMainTarget().GetCharacterID() == modular.GetNumFromParamString(circles[3])) ? 1 : 0;
+                    break;
+                default:
+                    result = skill.GetID();
+                break;
+            }
 
 //             return result;
 //         }
